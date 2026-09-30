@@ -1,33 +1,30 @@
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { FlatCompat } from '@eslint/eslintrc'
+import { defineConfig, globalIgnores } from 'eslint/config'
+import nextVitals from 'eslint-config-next/core-web-vitals'
+import nextTs from 'eslint-config-next/typescript'
 import prettierConfig from 'eslint-config-prettier'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+export default defineConfig([
+  // Игноры — выносим в globalIgnores, чтобы ESLint не пытался их линтить
+  globalIgnores([
+    'node_modules/**',
+    '.next/**',
+    'out/**',
+    'build/**',
+    'next-env.d.ts',
+    'src/generated/**',
+  ]),
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
+  // Базовые конфиги Next.js 16 (flat, без FlatCompat)
+  ...nextVitals,
+  ...nextTs,
 
-const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
-  prettierConfig, // ← отключает конфликтующие правила ESLint
+  // Отключаем правила ESLint, конфликтующие с Prettier
+  prettierConfig,
+
+  // Твои кастомные правила
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
-  {
-    ignores: [
-      'node_modules/**',
-      '.next/**',
-      'out/**',
-      'build/**',
-      'next-env.d.ts',
-      'src/generated/**',
-    ],
-  },
-]
-
-export default eslintConfig
+])

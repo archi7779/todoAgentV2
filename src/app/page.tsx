@@ -5,7 +5,7 @@ export default async function Home() {
   const session = await auth()
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
+    <main className="flex min-h-[calc(100vh-57px)] flex-col items-center justify-center gap-6 p-8">
       <h1 className="text-3xl font-bold">AI Agent V2</h1>
 
       {session ? (
