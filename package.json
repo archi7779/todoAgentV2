@@ -19,12 +19,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0",
     "@auth/prisma-adapter": "2.11.3",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "bcryptjs": "2.4.3",
     "next": "^16.3.6",
     "next-auth": "5.0.0-beta.32",
+    "openai": "7.27.0",
     "pg": "8.23.0",
     "pino": "9.14.0",
     "react": "19.2.8",

@@ -41,7 +41,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
-    const error = mapHttpError(response.status, payload)
+    const error = mapHttpError(response.status, payload, response.headers)
 
     if (error.status >= 500 || error.code === 'UNKNOWN') {
       // Логируем ТОЛЬКО неожиданные ошибки:
