@@ -11,14 +11,53 @@ import {
   CanceledError,
 } from './errors'
 
+/** Безопасно достаём error-объект из тела ответа (payload может быть null или мусором). */
+function parseErrorPayload(payload: unknown): ApiErrorResponse['error'] | null {
+  if (typeof payload !== 'object' || payload === null) return null
+  const error = (payload as { error?: unknown }).error
+  if (typeof error !== 'object' || error === null) return null
+  return error as ApiErrorResponse['error']
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+/** details для 422 — это карта «поле → сообщение». */
+function pickValidationFields(details: unknown): Record<string, string> {
+  if (!isRecord(details)) return {}
+  const fields: Record<string, string> = {}
+  for (const [key, value] of Object.entries(details)) {
+    if (typeof value === 'string') fields[key] = value
+  }
+  return fields
+}
+
+/**
+ * Приоритет: details.retryAfter → заголовок Retry-After (стандарт) → undefined.
+ * Заголовок обычно число секунд; HTTP-date не поддерживаем — редкий кейс.
+ */
+function pickRetryAfter(details: unknown, headers?: Headers): number | undefined {
+  if (isRecord(details) && typeof details.retryAfter === 'number') {
+    return details.retryAfter
+  }
+  const header = headers?.get('Retry-After')
+  if (header) {
+    const seconds = Number(header)
+    if (Number.isFinite(seconds)) return seconds
+  }
+  return undefined
+}
+
 /**
  * Превращает ответ сервера (со статусом 4xx/5xx) в доменную ошибку.
  * Вызывается ТОЛЬКО когда response.ok === false, то есть сервер ответил, но с ошибкой.
+ * Форма тела — ApiErrorResponse: { error: { code, message, details } }.
  */
-export function mapHttpError(status: number, payload: unknown): ApiError {
-  const message = (payload as ApiErrorResponse).error?.message ?? `HTTP ${status}`
-
-  const code = (payload as any)?.code ?? 'UNKNOWN'
+export function mapHttpError(status: number, payload: unknown, headers?: Headers): ApiError {
+  const error = parseErrorPayload(payload)
+  const message = error?.message ?? `HTTP ${status}`
+  const code = error?.code ?? 'UNKNOWN'
 
   switch (status) {
     // 401: токен невалидный/протух — особый сценарий (refresh или logout)
@@ -33,13 +72,13 @@ export function mapHttpError(status: number, payload: unknown): ApiError {
     case 404:
       return new NotFoundError(payload)
 
-    // 422: валидация — достаём поля, чтобы подсветить их в форме
+    // 422: валидация — details содержит карту «поле → сообщение»
     case 422:
-      return new ValidationError((payload as any)?.fields ?? {}, payload)
+      return new ValidationError(pickValidationFields(error?.details), payload)
 
-    // 429: rate limit — читаем Retry-After, если бэкенд его прислал
+    // 429: rate limit — retryAfter из details или из заголовка Retry-After
     case 429: {
-      const retryAfter = (payload as any)?.retryAfter
+      const retryAfter = pickRetryAfter(error?.details, headers)
       return new RateLimitError(retryAfter, payload)
     }
 

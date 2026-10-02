@@ -32,7 +32,7 @@ export default async function Home() {
           </div>
 
           <Link
-            href="/api/protected/agent"
+            href="/agent"
             className="mt-3 rounded border px-4 py-2 text-sm hover:bg-gray-100"
           >
             Перейти к Агенту
