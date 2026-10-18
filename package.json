@@ -21,6 +21,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0",
     "@auth/prisma-adapter": "2.11.3",
+    "@langchain/langgraph-checkpoint-postgres": "^1.1.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "bcryptjs": "2.4.3",
@@ -35,6 +36,9 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "3.3.7",
+    "@langchain/core": "^1.2.9",
+    "@langchain/langgraph": "^1.4.13",
+    "@langchain/openai": "^1.5.11",
     "@tailwindcss/postcss": "4.3.3",
     "@types/bcryptjs": "2.4.6",
     "@types/node": "22.20.4",

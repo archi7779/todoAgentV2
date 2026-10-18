@@ -33,12 +33,14 @@ export class OpenAICompatibleProvider implements LLMProvider {
   readonly name: string;
   readonly chatModel: string;
   readonly embedModel: string;
+  readonly apiKey: string;
   private client: OpenAI;
   private supportsStreamUsage: boolean;
 
   constructor(cfg: OpenAICompatConfig) {
     this.name = cfg.name;
     this.chatModel = cfg.chatModel;
+    this.apiKey = cfg.apiKey;
     this.embedModel = cfg.embedModel;
     this.client = new OpenAI({ apiKey: cfg.apiKey, baseURL: cfg.baseURL });
     this.supportsStreamUsage = cfg.supportsStreamUsage ?? true;

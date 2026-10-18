@@ -45,10 +45,13 @@ export class AnthropicProvider implements LLMProvider {
   readonly name = "anthropic";
   readonly chatModel: string;
   readonly embedModel = "(none — use openai/ollama/nvidia for embeddings)";
+  readonly apiKey: string;
+
   private client: Anthropic;
 
   constructor(cfg: AnthropicConfig) {
     this.chatModel = cfg.chatModel;
+    this.apiKey = cfg.apiKey;
     this.client = new Anthropic({ apiKey: cfg.apiKey });
   }
 
