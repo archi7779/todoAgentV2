@@ -30,6 +30,7 @@ export interface ChatOptions {
    * AbortSignal.any([user, timeout]).
    */
   signal?: AbortSignal;
+  streamMode?: ["values" | "updates" | "debug" | "messages" | "checkpoints" | "tasks" | "custom" | "tools"];
 }
 
 export interface TokenUsage {
@@ -70,6 +71,7 @@ export interface LLMProvider {
   readonly name: string;
   readonly chatModel: string;
   readonly embedModel: string;
+  readonly apiKey: string;
 
   /** Rejects with an AbortError if `options.signal` is aborted. */
   chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResult>;

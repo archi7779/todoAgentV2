@@ -9,3 +9,15 @@ export function withRequestContext<T>(req: Request, fn: () => Promise<T>): Promi
   }
   return requestContext.run(ctx, fn)
 }
+
+/**
+ * Привязывает пользователя к текущему запросу.
+ *
+ * Вызывать ПОСЛЕ `auth()` — раньше userId просто неизвестен. Мутируем тот же
+ * объект, что лежит в сторе, поэтому `pino.mixin` подхватит его во всех
+ * последующих строках, включая логи уже запущенного стрима.
+ */
+export function setRequestUserId(userId: string): void {
+  const ctx = requestContext.getStore()
+  if (ctx) ctx.userId = userId
+}
