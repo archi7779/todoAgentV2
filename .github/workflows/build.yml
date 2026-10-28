@@ -29,11 +29,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push app
         uses: docker/build-push-action@v5
         with:
           context: .
+          target: runner
           push: true
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest
             ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }}
+      
+      - name: Build and Push migrate
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: migrate
+          push: true
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,scope=migrate,mode=max
+          tags: |
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:migrate            

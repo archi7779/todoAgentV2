@@ -31,7 +31,22 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 RUN npm run build
 
-# ---------- Stage 3: runner ----------
+# ---------- Stage 3: migrate ----------
+FROM node:22-alpine AS migrate
+WORKDIR /app
+
+RUN apk add --no-cache openssl libc6-compat
+
+RUN printf '{"name":"todoagent-migrate","private":true,"type":"module"}\n' > package.json
+
+RUN npm install --no-save --no-audit --no-fund prisma@7.10.0 dotenv@16.6.1
+
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
+CMD ["npx", "prisma", "migrate", "deploy"]
+
+# ---------- Stage 4: runner ----------
 FROM node:22-alpine AS runner
 WORKDIR /app
 
@@ -57,4 +72,4 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 USER nextjs
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["node", "server.js"]
