@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { registerSchema } from '@/src/lib/validations/auth'
 import { logger } from '@/src/lib/logger'
+import { WELCOME_TOKEN_BALANCE } from '@/src/lib/billing/constants'
 
 export default async function RegisterPage({
   searchParams,
@@ -48,6 +49,9 @@ export default async function RegisterPage({
         data: {
           email,
           password: hashedPassword,
+          // Явно фиксируем бизнес-правило: новому пользователю — 5000 токенов.
+          // Дефолт в схеме остаётся страховкой для других путей создания.
+          tokenBalance: WELCOME_TOKEN_BALANCE,
         },
       })
 
@@ -68,7 +72,7 @@ export default async function RegisterPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-gray-50">
       <form
         action={handleRegister}
         className="flex w-full max-w-sm flex-col gap-4 rounded-lg border bg-white p-6 shadow-sm"

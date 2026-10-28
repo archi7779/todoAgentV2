@@ -8,6 +8,7 @@ import { logger } from "@/src/lib/logger";
 import { setRequestUserId, withRequestContext } from "@/src/lib/logger/with-req-context";
 import { AgentNodeName, AgentStreamInput, getApp } from "@/src/agent/graph";
 import { getMainThreadId } from "@/src/agent/threads";
+import { assertHasTokens } from "@/src/lib/billing/tokens";
 import { Command } from "@langchain/langgraph";
 import { AIMessageChunk, HumanMessage } from "@langchain/core/messages";
 import { makeSSESender } from "./sse";
@@ -46,6 +47,11 @@ async function handleAgentStream(req: NextRequest) {
     // чат. Клиент не может подставить чужой thread_id и продолжить чужой диалог.
     const threadId = getMainThreadId(session.user.id);
 
+    // Ранний 402 до открытия SSE: если баланса нет, стрим даже не начинаем.
+    // Точная сумма неизвестна заранее, поэтому это только «есть ли вообще».
+    // Атомарное списание — в агентном узле, после usage_metadata.
+    await assertHasTokens(session.user.id);
+
     log.info(
       { threadId, resume: Boolean(body.resume) },
       "agent-stream: запрос принят",
@@ -63,7 +69,7 @@ async function handleAgentStream(req: NextRequest) {
     const deadlineSignal = AbortSignal.timeout(LLM_TIMEOUT_MS);
 
     const config = {
-        configurable: { thread_id: threadId },
+        configurable: { thread_id: threadId, userId: session.user.id },
         signal: AbortSignal.any([consumerSignal, deadlineSignal]),
         recursionLimit: 10,
         }; 
@@ -71,6 +77,17 @@ async function handleAgentStream(req: NextRequest) {
         let app;
         try {
             app = await getApp();
+            if (body.resume === undefined) {
+          const snapshot = await app.getState(config);
+          const pending = snapshot?.tasks?.flatMap((t) => t.interrupts ?? []) ?? [];
+          if (pending.length > 0) {
+            throw new AppError(
+              409,
+              "INTERRUPT_PENDING",
+              "Есть неподтверждённое действие. Ответьте на него, прежде чем писать новое сообщение.",
+            );
+          }
+        }
         } catch (err) {
             //ошибка получения графа  - лог внутри гетАпп
             const appError = toAppError(err);
@@ -82,7 +99,8 @@ async function handleAgentStream(req: NextRequest) {
             ? (new Command<Record<string, unknown>, Record<string, unknown>, AgentNodeName>({
                 resume: body.resume,
               }) as AgentStreamInput)
-            : { messages: [new HumanMessage(body.message)] };
+            // `?? ""` — только ради типов: схема гарантирует message, если resume нет.
+            : { messages: [new HumanMessage(body.message ?? "")] };
 
     const t0 = performance.now();
 
@@ -115,7 +133,6 @@ async function handleAgentStream(req: NextRequest) {
                             // --- токены ---
                 if (mode === "messages") {
                       const [chunk, metadata] = payload;
-                      console.log('messagesCHUNK',chunk)
                       for (const evt of handleMessageChunk(chunk, metadata)) {
                         send(evt);
                       }
@@ -123,7 +140,6 @@ async function handleAgentStream(req: NextRequest) {
                     // --- переходы узлов + tool_calls Для отображения на фронте какая нода работает----------------------------------------------------------------------------------------------------
                     if (mode === "updates") {
                       for (const [nodeName, update] of Object.entries(payload)) {
-                         console.log('updatesCHUNK',update)
                         for (const evt of handleUpdate(nodeName, update)) {
                           send(evt);
                         }
@@ -137,7 +153,6 @@ async function handleAgentStream(req: NextRequest) {
                   const interrupts = finalState?.tasks?.flatMap((t: any) => t.interrupts ?? []) ?? [];
                   //Так можно посмотреть соклько токенов за историю потрачено
                   const totalTokens = finalState.values?.totalTokens
-                  console.log('finalState',finalState.values?.totalTokens)
                   logger.info(
                     {
                       tool: "run",

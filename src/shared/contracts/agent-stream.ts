@@ -29,3 +29,18 @@ export type AgentStreamEvent =
   | { type: "error"; error: string; message?: string }
      /** инфа о количестве токенов. */
   | { type: "usage"; tokenUsage: number }
+
+  export type ConfirmDeleteInterrupt = {
+  type: "confirm_delete";
+  taskId: string;
+  title: string;
+  status?: string;
+};
+
+export type InterruptPayload = ConfirmDeleteInterrupt
+
+export function isConfirmDelete(value: unknown): value is ConfirmDeleteInterrupt {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return v.type === "confirm_delete" && typeof v.taskId === "string";
+}
