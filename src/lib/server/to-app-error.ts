@@ -1,4 +1,5 @@
 import { AppError } from "@/src/shared/contracts/error";
+import { InsufficientTokensError } from "@/src/lib/billing/errors";
 import {
   AuthError,
   CanceledError,
@@ -11,6 +12,7 @@ import {
   RateLimitError,
   TimeoutError,
 } from "@/src/agent/errors";
+import { isDbUnavailable } from "./parsepdb-errors";
 
 /**
  * Переводит ошибку серверного слоя в `AppError` (HTTP-контракт API).
@@ -25,6 +27,13 @@ import {
 export function toAppError(err: unknown): AppError {
   // Уже HTTP-контракт — не трогаем (например, наши же 401/422 из роута).
   if (err instanceof AppError) return err;
+
+  if (err instanceof InsufficientTokensError) {
+    return new AppError(402, "INSUFFICIENT_TOKENS", err.message, {
+      required: err.required,
+      available: err.available,
+    });
+  }
 
   if (err instanceof RateLimitError) {
     return new AppError(
@@ -74,6 +83,9 @@ export function toAppError(err: unknown): AppError {
   if (err instanceof LLMError) {
     return new AppError(500, err.code, err.message);
   }
-
+  
+  if (isDbUnavailable(err)) {
+    return new AppError(503, "DB_UNAVAILABLE", "Сервис временно недоступен. Попробуйте ещё раз через минуту.");
+  }
   return new AppError(500, "INTERNAL", "Внутренняя ошибка сервера");
 }

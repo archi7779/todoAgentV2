@@ -81,6 +81,8 @@ export function useChatHistory() {
   return {
     history,
     messages: history?.messages ?? [],
+    /** Пауза HITL, сохранённая в чекпоинтере (после перезагрузки страницы). */
+    interrupt: history?.interrupt ?? null,
     loading,
     error,
     reload,

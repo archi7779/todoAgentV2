@@ -29,7 +29,8 @@ export type AgentToolCall = { node: string; tool: string; args: unknown }
  * zod-схему в клиентский бандл ради типа не хочется. Валидирует всё равно сервер.
  */
 export type AgentStreamPayload = {
-  message: string
+  /** Новый запрос пользователя. Не нужен при ответе на interrupt. */
+  message?: string
   /** Есть поле → это ответ на interrupt, а не новый запрос. */
   resume?: Record<string, unknown>
   provider?: 'openai' | 'anthropic' | 'deepseek'
@@ -218,7 +219,6 @@ export function useAgentStream() {
       )
     } catch (err) {
       if (err instanceof CanceledError || isAbortError(err)) {
-        console.log('cancel',err)
         setState(prev => ({ ...prev, status: 'canceled', error: null }))
       } else {
         setState(prev => ({ ...prev, status: 'error', error: toMessage(err) }))

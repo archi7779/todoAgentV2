@@ -61,3 +61,13 @@ export type Session = Prisma.SessionModel
  * 
  */
 export type VerificationToken = Prisma.VerificationTokenModel
+/**
+ * Model TokenUsage
+ * 
+ */
+export type TokenUsage = Prisma.TokenUsageModel
+/**
+ * Model Task
+ * 
+ */
+export type Task = Prisma.TaskModel

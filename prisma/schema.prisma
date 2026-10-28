@@ -8,14 +8,17 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?  
-  email         String    @unique
-  password      String?   // Добавьте это поле для Credentials
+  id            String       @id @default(cuid())
+  name          String?
+  email         String       @unique
+  password      String? // Добавьте это поле для Credentials
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
+  tokenBalance  Int          @default(5000)
+  tokenUsage    TokenUsage[]
+  tasks         Task[]
 }
 
 // Стандартные модели Auth.js
@@ -50,4 +53,45 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Журнал списаний. Баланс в User — быстрый счётчик, здесь — история: за что,
+// когда, какая модель и сколько токенов на вход/выход. Без журнала невозможно
+// ни разобраться в споре, ни вернуть токены, ни посчитать реальную стоимость.
+model TokenUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  threadId     String?
+  model        String
+  inputTokens  Int
+  outputTokens Int
+  totalTokens  Int
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([threadId, createdAt])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Task {
+  id             String     @id @default(cuid())
+  userId         String
+  title          String
+  status         TaskStatus @default(TODO)
+  description    String?
+  createdAt      DateTime   @default(now())
+  completedAt    DateTime?
+  idempotencyKey String?
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([userId, status])
 }

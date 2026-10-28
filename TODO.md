@@ -150,3 +150,30 @@ AbortSignal.any([request.signal, AbortSignal.timeout(60_000)])
 | Бюджет токенов/денег| приложение   | учёт `usage` + `break` в цикле    |
 | Лимит итераций      | приложение   | `maxIterations` + `break`         |
 | Общий таймаут прогона| приложение  | `AbortSignal.timeout(overall)`    |
+
+---
+
+## Деплой (VDS 212.109.193.226, wowgladarena.fvds.ru)
+
+- [ ] **ОГРАНИЧИТЬ ЛОГИ ПО ОБЪЁМУ.** Docker `json-file` без лимита растёт до конца
+      диска и роняет Postgres. В `docker-compose.prod.yml` для `app` и `db`:
+      ```yaml
+      logging:
+        driver: json-file
+        options:
+          max-size: "10m"
+          max-file: "5"
+      ```
+- [ ] swap 2 ГБ (`/swapfile` + `/etc/fstab`, `vm.swappiness=10`)
+- [ ] `ufw allow 22,80,443`, остальное закрыто
+- [ ] пользователь `deploy` + SSH-ключ, `PasswordAuthentication no`
+- [ ] `.env.production` с реальными секретами (не в git)
+- [ ] порт приложения только на localhost: `127.0.0.1:3000:3000`
+- [ ] Caddy перед приложением (HTTPS на `wowgladarena.fvds.ru`)
+- [ ] `prisma migrate deploy` внутри контейнера проходит (проверить `dotenv` в runner)
+- [ ] права на схему `langgraph`: `setup()` создаёт её в рантайме, пользователю БД нужен `CREATE`
+- [ ] healthcheck у `app`
+- [ ] `pg_dump` по cron + проверить восстановление дампа
+- [ ] проверить с сервера: `curl https://api.deepseek.com` (доступность провайдера)
+- [ ] Sentry (или аналог) для ошибок после первого деплоя
+

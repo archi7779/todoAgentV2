@@ -36,7 +36,7 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-gray-50">
       <form
         action={handleLogin}
         className="flex w-full max-w-sm flex-col gap-4 rounded-lg border bg-white p-6 shadow-sm"
